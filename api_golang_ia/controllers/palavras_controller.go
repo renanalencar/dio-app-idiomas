@@ -10,7 +10,23 @@ type PalavrasController struct {
 }
 
 func (pc PalavrasController) Index(c *gin.Context) {
-	c.JSON(200, models.Mensagem{
-		Mensagem: "Aqui vai retornar a lista de palavras",
-	})
+	palavras := []models.Palavra{
+		{
+			Palavra:  "Cachorro",
+			Traducao: "Dog",
+			Opcoes:   []string{"Cat", "Dog", "Elephant"},
+		},
+		{
+			Palavra:  "Gato",
+			Traducao: "Cat",
+			Opcoes:   []string{"Dog", "Cat", "Elephant"},
+		},
+		{
+			Palavra:  "Elefante",
+			Traducao: "Elephant",
+			Opcoes:   []string{"Dog", "Cat", "Elephant"},
+		},
+	}
+
+	c.JSON(200, palavras)
 }
