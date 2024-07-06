@@ -9,8 +9,11 @@ import (
 func main() {
 	r := gin.Default()
 
-	controllers := controllers.HomeController{}
-	r.GET("/", controllers.Index)
+	homeController := controllers.HomeController{}
+	r.GET("/", homeController.Index)
+
+	palavraController := controllers.PalavrasController{}
+	r.GET("/palavras", palavraController.Index)
 
 	r.Run(":8888") // por padrão, o servidor é executado na porta 8080
 }
