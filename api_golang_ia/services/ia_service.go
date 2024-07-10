@@ -25,73 +25,74 @@ func (ias *IAService) BuscaPalavras() []models.Palavra {
 
 	openAIKey := os.Getenv("OPEN_AI_KEY")
 	openAIUrl := os.Getenv("OPEN_AI_URL")
+	openAIModel := os.Getenv("OPEN_AI_MODEL")
 
 	if openAIKey == "" {
 		log.Fatal("A variável OPEN_AI_KEY não foi definida")
 		return nil
 	}
 
-	prompt := "Traga para mim um conjunto de palavras em inglês"
-	data := map[string]interface{}{
-		"model":      "gpt-3.5-turbo-instruct",
-		"prompt":     prompt,
-		"max_tokens": 100,
-	}
-	jsonData, err := json.Marshal(data)
-	if err != nil {
-		log.Fatal("Erro ao serializar dados: ", err)
-		return nil
-	}
-
-	req, err := http.NewRequest("POST", openAIUrl, bytes.NewBuffer(jsonData))
-	if err != nil {
-		log.Fatal("Erro ao criar a requisição: ", err)
-		return nil
+	messages := []map[string]string{
+		{
+			"role":    "system",
+			"content": "Sua missão é retornar para mim uma lista de palavras em inglês com quatro alternativas sendo uma correta. O formato da lista retornada será assim: `[{\"palavra\": \"Hello\", \"traducao\": \"Olá\", \"opcoes\": [\"Boa\", \"Ok\", \"Olá\", \"Bacana\"]}]`. Somente o JSON deve ser retornado com nenhum outro texto.",
+		},
+		{
+			"role":    "user",
+			"content": "Traga para mim o campo 'palavra' em inglês, o campo 'traducao' em português e o campo 'opcoes', uma lista de quatro itens em português.",
+		},
 	}
 
-	req.Header.Set("Authorization", "Bearer "+openAIKey)
+	requestBody, err := json.Marshal(map[string]interface{}{
+		"model":    openAIModel,
+		"messages": messages,
+	})
+
+	if err != nil {
+		log.Fatal("Erro ao montar a requisição: ", err)
+	}
+
+	req, _ := http.NewRequest("POST", openAIUrl, bytes.NewBuffer(requestBody))
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", "Bearer "+openAIKey)
 
 	client := &http.Client{}
 	resp, err := client.Do(req)
+
 	if err != nil {
-		log.Fatal("Erro ao fazer a requisição: ", err)
-		return nil
+		log.Fatal("Erro ao enviar requisição: ", err)
 	}
+
 	defer resp.Body.Close()
 
-	var response map[string]interface{}
-	body, err := io.ReadAll(resp.Body)
+	reponseBody, err := io.ReadAll(resp.Body)
+
 	if err != nil {
 		log.Fatal("Erro ao ler a resposta: ", err)
-		return nil
 	}
 
-	fmt.Printf("Resposta: %s\n", body)
+	var result map[string]interface{}
+	json.Unmarshal([]byte(reponseBody), &result)
 
-	err = json.Unmarshal(body, &response)
-	if err != nil {
-		log.Fatal("Erro ao desserializar a resposta: ", err)
-		return nil
+	var palavras []models.Palavra
+
+	if choices, ok := result["choices"].([]interface{}); ok && len(choices) > 0 {
+		if firstChoice, ok := choices[0].(map[string]interface{}); ok {
+			if message, ok := firstChoice["message"].(map[string]interface{}); ok {
+				resposta := message["content"].(string)
+
+				fmt.Println("Resposta: ", resposta)
+
+				err := json.Unmarshal([]byte(resposta), &palavras)
+				if err != nil {
+					log.Fatal("Erro ao desserializar resposta: ", err)
+					return nil
+				}
+
+				return palavras
+			}
+		}
 	}
 
-	palavras := []models.Palavra{
-		{
-			Palavra:  "Cachorro",
-			Traducao: "Dog",
-			Opcoes:   []string{"Cat", "Dog", "Elephant"},
-		},
-		{
-			Palavra:  "Gato",
-			Traducao: "Cat",
-			Opcoes:   []string{"Dog", "Cat", "Elephant"},
-		},
-		{
-			Palavra:  "Elefante",
-			Traducao: "Elephant",
-			Opcoes:   []string{"Dog", "Cat", "Elephant"},
-		},
-	}
-
-	return palavras
+	return nil
 }
