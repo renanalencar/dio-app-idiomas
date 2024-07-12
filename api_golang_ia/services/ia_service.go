@@ -35,7 +35,7 @@ func (ias *IAService) BuscaPalavras() []models.Palavra {
 	messages := []map[string]string{
 		{
 			"role":    "system",
-			"content": "Sua missão é retornar para mim uma lista de palavras em inglês com quatro alternativas sendo uma correta. O formato da lista retornada será assim: `[{\"palavra\": \"Hello\", \"traducao\": \"Olá\", \"opcoes\": [\"Boa\", \"Ok\", \"Olá\", \"Bacana\"]}]`. Somente o JSON deve ser retornado com nenhum outro texto.",
+			"content": "Sua missão é retornar para mim uma lista de palavras em inglês com quatro alternativas sendo uma correta. O formato da lista retornada será assim: `[{\"palavra\": \"Hello\", \"traducao\": \"Olá\", \"opcoes\": [\"Boa\", \"Ok\", \"Olá\", \"Bacana\"]}]`. Somente o JSON deve ser retornado com nenhum outro texto. Não utilizar formatação markdown.",
 		},
 		{
 			"role":    "user",
@@ -80,7 +80,6 @@ func (ias *IAService) BuscaPalavras() []models.Palavra {
 		if firstChoice, ok := choices[0].(map[string]interface{}); ok {
 			if message, ok := firstChoice["message"].(map[string]interface{}); ok {
 				resposta := message["content"].(string)
-
 				fmt.Println("Resposta: ", resposta)
 
 				err := json.Unmarshal([]byte(resposta), &palavras)
